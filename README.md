@@ -15,8 +15,7 @@
 </p>
 
 ## 🐧 Supported distros
-- Arch Linux
-- CachyOS
+- Fedora 44/45
 
 ## 📋 Requirements
 - A minimal / no desktop installation of a [supported distro](#-supported-distros)
