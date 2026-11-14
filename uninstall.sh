@@ -97,7 +97,11 @@ dry_run() {
 
     mapfile -t pkgs < <(packages_to_remove)
     info "Would ask, then remove these packages at most: ${pkgs[*]:-none}"
-    info "Would keep: dolphin, paru and anything you had before Viresta"
+    if [ "$PKG_BACKEND" = "dnf" ]; then
+        info "Would keep: Dolphin and anything you had before Viresta"
+    else
+        info "Would keep: Dolphin, paru and anything you had before Viresta"
+    fi
     if [ -d "$BACKUP_DIR" ]; then
         info "Would put back your configs from before Viresta"
     fi
@@ -152,6 +156,7 @@ main() {
     reset_failures
     banner
 
+    detect_distribution
     require_non_root
     require_sudo
     require_install_record

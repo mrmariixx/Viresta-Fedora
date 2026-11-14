@@ -40,7 +40,7 @@ is_installed() { printf '%s\n' $INSTALLED | grep -qxF "$1"; }
 pacman() { [ "$1" = -Qq ] && [ "$#" -eq 1 ] && printf '%s\n' $INSTALLED; }
 pkg_source() { case "$1" in lib32-nvidia-580xx-utils) echo aur ;; *) echo repo ;; esac; }
 # Installing from multilib only works once its package list was downloaded with -Syu.
-run_pacman() {
+run_package_manager() {
     case "$1" in
         -Syu) call "pacman -Syu"; SYNCED=1 ;;
         -S)

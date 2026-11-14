@@ -84,10 +84,12 @@ ask_options() {
 
     drivers="$(drivers_summary)"
 
-    add_option vicinae "Vicinae" "Faster, better looking app launcher than KDE's own" "$USE_VICINAE" "Applications"
-    add_option gaming "Gaming" "Steam, ProtonUp-Qt, GOverlay, GameMode and MangoHud" "$USE_GAMING" "Applications"
+    if [ "$PKG_BACKEND" != "dnf" ]; then
+        add_option vicinae "Vicinae" "Faster, better looking app launcher than KDE's own" "$USE_VICINAE" "Applications"
+    fi
+    add_option gaming "Gaming" "Steam and tools for game performance and compatibility" "$USE_GAMING" "Applications"
     add_option rename_wallpapers "rename_wallpapers.py" "Renames your wallpapers in ~/Pictures/Wallpapers" "$USE_RENAME_WALLPAPERS" "Scripts"
-    add_option update_script "update" "Updates your official, AUR and Flatpak apps with one command" "$USE_UPDATE_SCRIPT" "Scripts"
+    add_option update_script "update" "Updates your system packages and Flatpak apps with one command" "$USE_UPDATE_SCRIPT" "Scripts"
     if [ -n "$drivers" ]; then
         add_option drivers "Install drivers" "$drivers" "$USE_DRIVERS" "Drivers"
     fi
@@ -95,7 +97,7 @@ ask_options() {
     choose_options
 
     USE_VICINAE=0
-    if option_enabled vicinae; then USE_VICINAE=1; fi
+    if [ "$PKG_BACKEND" != "dnf" ] && option_enabled vicinae; then USE_VICINAE=1; fi
     USE_GAMING=0
     if option_enabled gaming; then USE_GAMING=1; fi
     USE_RENAME_WALLPAPERS=0
@@ -163,7 +165,7 @@ summary() {
         fi
         emit "$C_OK" "$S_OK Temporary sudo rule removed on exit"
         emit "$C_OK" "$S_OK Install log: $LOG_FILE"
-        emit "$C_OK" "$S_OK AUR build logs: $AUR_LOG_DIR"
+        emit "$C_OK" "$S_OK Optional package logs: $AUR_LOG_DIR"
         printf '\n'
         emit "$C_DIM" "$S_BULLET Reboot to start KDE Plasma (Wayland) from SDDM:"
         printf '%bsudo reboot%b\n' "$C_ACCENT" "$C_RESET"
@@ -178,6 +180,7 @@ summary() {
 main() {
     reset_failures
     banner
+    detect_distribution
     if [ "$DRY_RUN" -eq 1 ]; then
         warn "DRY RUN: no changes will be made"
     fi
@@ -214,21 +217,29 @@ main() {
     update_system
 
     step "Installing system tools"
-    install_group "System" "$SCRIPT_DIR/packages/system/base.txt"
+    install_group "System" "$(package_list_path system/base)"
 
     step "Installing KDE Plasma"
-    install_group "KDE Plasma" "$SCRIPT_DIR/packages/system/kde.txt"
+    install_group "KDE Plasma" "$(package_list_path system/kde)"
 
     step "Installing apps"
-    install_group_optional "Applications" "$SCRIPT_DIR/packages/apps/pacman.txt"
+    if [ "$PKG_BACKEND" = "dnf" ]; then
+        install_group_optional "Applications" "$(package_list_path apps/rpm)"
+    else
+        install_group_optional "Applications" "$SCRIPT_DIR/packages/apps/pacman.txt"
+    fi
 
     set_build_jobs
 
-    step "Installing AUR apps"
-    if bootstrap_paru; then
-        install_aur
+    step "Installing optional apps"
+    if [ "$PKG_BACKEND" = "dnf" ]; then
+        install_flatpak_apps
     else
-        warn "paru unavailable; skipping AUR packages"
+        if bootstrap_paru; then
+            install_aur
+        else
+            warn "paru unavailable; skipping AUR packages"
+        fi
     fi
     install_shell_packages
 

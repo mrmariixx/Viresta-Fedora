@@ -23,9 +23,9 @@ install_shell_packages() {
             info "Would install $pkg (repository)"
         else
             info "$pkg: installing"
-            run_pacman -S --needed --noconfirm "$pkg" || failure "$pkg: install failed - see $LOG_FILE"
+            run_package_manager -S --needed --noconfirm "$pkg" || failure "$pkg: install failed - see $LOG_FILE"
         fi
-    done < <(read_package_list "$SCRIPT_DIR/packages/system/shell.txt")
+    done < <(read_package_list "$(package_list_path system/shell)")
 
     return 0
 }

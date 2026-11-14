@@ -118,6 +118,11 @@ apply_profile_picture() {
 remove_other_themes() {
     local package
 
+    if [ -z "$REMOVED_THEMES_HOOK" ]; then
+        printf 'Keeping Fedora system themes; pacman hooks are not available\n'
+        return 0
+    fi
+
     sudo rm -rf "${REMOVED_THEMES[@]}"
     printf 'Removed %s other theme files\n' "${#REMOVED_THEMES[@]}"
 

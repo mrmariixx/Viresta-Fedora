@@ -25,9 +25,9 @@ missing_drivers() {
 # driver the desktop would not start.
 missing_32bit_drivers() {
     if nvidia_driver_missing; then
-        missing_drivers | grep '^lib32-' | grep -v '^lib32-nvidia' || true
+        missing_drivers | grep -E '^(lib32-|.*\.i686$)' | grep -v 'nvidia' || true
     else
-        missing_drivers | grep '^lib32-' || true
+        missing_drivers | grep -E '^(lib32-|.*\.i686$)' || true
     fi
 }
 
@@ -122,8 +122,12 @@ install_driver_package() {
     local hardware="$1" pkg="$2"
 
     if [ "$(pkg_source "$pkg")" != "repo" ]; then
-        aur_install_one "$pkg" "$(driver_flags_for "$hardware" "$pkg")"
-        return
+        if [ "$PKG_BACKEND" = "pacman" ]; then
+            aur_install_one "$pkg" "$(driver_flags_for "$hardware" "$pkg")"
+            return
+        fi
+        failure "$pkg: unavailable in configured Fedora repositories"
+        return 1
     fi
 
     if [ "${DRY_RUN:-0}" -eq 1 ]; then
@@ -132,33 +136,31 @@ install_driver_package() {
     fi
 
     info "$pkg: installing"
-    if ! run_pacman -S --needed --noconfirm "$pkg"; then
+    if ! run_package_manager -S --needed --noconfirm "$pkg"; then
         failure "$pkg: install failed - see $LOG_FILE"
         return 1
     fi
 }
 
-# Some distros come with a package that clashes with the one in drivers.txt, and neither
-# pacman nor paru replaces a package with --noconfirm. The name is compared because
-# pacman also answers for a package that only provides it. If the install fails the
-# old package comes back, so the system still has it.
+# Some distros come with a package that clashes with the requested driver. If replacement
+# fails, restore the original package so the system still has a working driver.
 replace_driver_package() {
     local hardware="$1" pkg="$2" old="$3"
 
-    if [ "${DRY_RUN:-0}" -eq 1 ] || [ "$(pacman -Qq "$old" 2>/dev/null)" != "$old" ]; then
+    if [ "${DRY_RUN:-0}" -eq 1 ] || ! is_installed "$old"; then
         install_driver_package "$hardware" "$pkg"
         return
     fi
 
     info "$old: replacing with $pkg"
-    if ! run_pacman -Rdd --noconfirm "$old"; then
+    if ! run_package_manager -Rdd --noconfirm "$old"; then
         failure "$pkg: could not remove $old - see $LOG_FILE"
         return 1
     fi
 
     install_driver_package "$hardware" "$pkg" && return 0
 
-    run_pacman -S --needed --noconfirm "$old" \
+    run_package_manager -S --needed --noconfirm "$old" \
         || failure "Could not bring back $old. To try again: sudo pacman -S $old"
     return 1
 }

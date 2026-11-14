@@ -137,6 +137,7 @@ summary() {
 main() {
     reset_failures
 
+    detect_distribution
     require_non_root
     require_sudo
 
@@ -167,6 +168,7 @@ main() {
     fi
     install_new_repo_packages
     install_new_aur_packages
+    install_new_flatpak_apps
     install_shell_packages
     install_new_32bit_drivers
 

@@ -14,6 +14,8 @@ REPO="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
 TEST_DIR="$(mktemp -d)"
 VIRESTA="$TEST_DIR/Viresta"
 BIN="$TEST_DIR/bin"
+export OS_RELEASE_FILE="$TEST_DIR/os-release" PKG_BACKEND=pacman
+printf 'ID=arch\n' >"$OS_RELEASE_FILE"
 PASSED=0
 FAILED=0
 
@@ -28,6 +30,8 @@ unset XDG_CONFIG_HOME XDG_DATA_HOME XDG_STATE_HOME XDG_CACHE_HOME MAKEFLAGS NO_C
     VIRESTA_RUN_AS VIRESTA_PULLED VIRESTA_NEW_RELEASE
 mkdir -p "$HOME" "$BIN"
 export PATH="$BIN:$PATH"
+printf '#!/bin/sh\nexec "$@"\n' >"$BIN/sudo"
+chmod +x "$BIN/sudo"
 
 git config --global user.name test
 git config --global user.email test@test

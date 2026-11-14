@@ -1,0 +1,21 @@
+# hardware          package                               service                     replaces          build-flags
+vmware              open-vm-tools                         vmtoolsd.service
+kvm                 qemu-guest-agent                      qemu-guest-agent.service
+qemu                qemu-guest-agent                      qemu-guest-agent.service
+oracle              virtualbox-guest-additions            vboxservice.service
+amd                 mesa-dri-drivers
+amd                 mesa-vulkan-drivers
+amd                 mesa-vulkan-drivers.i686
+amd                 vulkan-loader.i686
+intel               mesa-dri-drivers
+intel               mesa-vulkan-drivers
+intel               mesa-vulkan-drivers.i686
+intel               vulkan-loader.i686
+intel               intel-media-driver
+intel               libva-intel-driver
+nvidia              kernel-devel
+nvidia              akmod-nvidia
+nvidia              xorg-x11-drv-nvidia-cuda
+nvidia              xorg-x11-drv-nvidia-libs.i686
+nvidia              egl-wayland
+nvidia-laptop       switcheroo-control           switcheroo-control.service

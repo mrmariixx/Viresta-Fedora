@@ -73,6 +73,7 @@ install_default_cursor() {
     local target="$CURSORS_DIR/default/index.theme"
 
     sudo_install_file "$source" "$target"
+    [ -n "$DEFAULT_CURSOR_HOOK" ] || return 0
 
     sudo mkdir -p "$(dirname "$DEFAULT_CURSOR_HOOK")"
     {

@@ -133,4 +133,13 @@ else
     skip "not Arch: this system has a real pacman"
 fi
 
+# Fedora checks DNF's update status and does not expose an AUR update source.
+fake dnf 'case "$1" in check-update) n="$(cat "$FAKE/official" 2>/dev/null || echo 0)"; for i in $(seq "$n"); do echo "pkg$i 1 -> 2"; done; [ "$n" -eq 0 ] || exit 100 ;; *) echo "dnf $*" >>"$CALLS" ;; esac'
+printf 'ID=fedora\n' >"$OS_RELEASE_FILE"
+waiting 2 1 1
+run_update "" --yes
+has "Fedora counts DNF updates" "Official   2 updates" "$OUT"
+hasnt "Fedora does not advertise AUR" "AUR" "$OUT"
+is "Fedora upgrades with DNF, then Flatpak" "$(calls)" "sudo dnf upgrade --refresh -y;flatpak update -y"
+
 finish

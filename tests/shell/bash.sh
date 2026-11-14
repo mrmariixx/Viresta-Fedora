@@ -32,9 +32,10 @@ getent() { printf 'frost:x:1000:1000::/home/frost:%s\n' "$FAKE_SHELL"; }
 info() { :; }
 failure() { printf 'FAILURE: %s\n' "$1"; }
 is_installed() { [ "$INSTALLED" = yes ]; }
+package_list_path() { printf '%s\n' "$VIRESTA/packages/$1.txt"; }
 pkg_source() { case "$1" in blesh-git) echo aur ;; *) echo repo ;; esac; }
 aur_install_one() { printf 'aur %s;' "$1" >>"$CALLS"; }
-run_pacman() { printf 'pacman %s;' "$4" >>"$CALLS"; }
+run_package_manager() { printf 'pacman %s;' "$4" >>"$CALLS"; }
 read_package_list() { sed -e 's/#.*//' -e '/^$/d' "$1"; }
 
 clean() { rm -rf "$BASHRC_FILE" "$BASHRC_ADDED_FILE" "$NOTES" "$HOME/.blerc" "$CALLS" "$HOME/.config"; }

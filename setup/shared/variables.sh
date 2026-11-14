@@ -181,6 +181,11 @@ ICON_THEME_LIGHT_COLOR="#292724"
 CURSORS_DIR="/usr/share/icons"
 DEFAULT_CURSOR_HOOK="/etc/pacman.d/hooks/viresta-default-cursor.hook"
 
+if [ -r "${OS_RELEASE_FILE:-/etc/os-release}" ] && . "${OS_RELEASE_FILE:-/etc/os-release}" && [ "${ID:-}" = "fedora" ]; then
+    REMOVED_THEMES_HOOK=""
+    DEFAULT_CURSOR_HOOK=""
+fi
+
 # ------------------------------------------------------------
 # Vicinae
 # ------------------------------------------------------------

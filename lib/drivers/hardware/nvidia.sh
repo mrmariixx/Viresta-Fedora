@@ -23,12 +23,15 @@ NVIDIA_OLD_IDS="$SCRIPT_DIR/packages/drivers/nvidia/nouveau.ids"
 nvidia_hardware() {
     local id
 
+    ensure_package_backend
     id="$(cat "$1/device")"
     id="${id#0x}"
-    if grep -qwF "$id" "$NVIDIA_580XX_IDS" 2>/dev/null; then
-        printf 'nvidia-580xx\n'
-    elif grep -qwF "$id" "$NVIDIA_OLD_IDS" 2>/dev/null; then
+    if grep -qwF "$id" "$NVIDIA_OLD_IDS" 2>/dev/null; then
         printf 'nvidia-old\n'
+    elif [ "${PKG_BACKEND:-}" = "dnf" ]; then
+        printf 'nvidia\n'
+    elif grep -qwF "$id" "$NVIDIA_580XX_IDS" 2>/dev/null; then
+        printf 'nvidia-580xx\n'
     else
         printf 'nvidia\n'
     fi
@@ -37,8 +40,13 @@ nvidia_hardware() {
 # Whatever NVIDIA driver is there may have been chosen on purpose, and swapping a working
 # driver is an easy way to break the desktop.
 has_nvidia_driver() {
-    pacman -Qq 2>/dev/null \
-        | grep -Eqx 'nvidia|nvidia-dkms|nvidia-lts|nvidia-open|nvidia-open-dkms|nvidia-open-lts|nvidia-lts-open|nvidia-[0-9]+xx-dkms'
+    ensure_package_backend
+    if [ "${PKG_BACKEND:-}" = "dnf" ]; then
+        rpm -qa --qf '%{NAME}\n' 2>/dev/null | grep -Eqx 'akmod-nvidia|xorg-x11-drv-nvidia'
+    else
+        pacman -Qq 2>/dev/null \
+            | grep -Eqx 'nvidia|nvidia-dkms|nvidia-lts|nvidia-open|nvidia-open-dkms|nvidia-open-lts|nvidia-lts-open|nvidia-[0-9]+xx-dkms'
+    fi
 }
 
 has_nvidia_to_install() {
@@ -47,7 +55,10 @@ has_nvidia_to_install() {
 
 # The driver Viresta picks for the card, the one in its row in drivers.txt.
 nvidia_driver_for_card() {
-    if has_hardware nvidia-580xx; then
+    ensure_package_backend
+    if [ "${PKG_BACKEND:-}" = "dnf" ]; then
+        printf 'akmod-nvidia\n'
+    elif has_hardware nvidia-580xx; then
         printf 'nvidia-580xx-dkms\n'
     elif has_hardware nvidia; then
         printf 'nvidia-open-dkms\n'
@@ -84,6 +95,11 @@ settle_nvidia_hardware() {
 kernel_headers() {
     local file found=0
 
+    if [ "${PKG_BACKEND:-}" = "dnf" ]; then
+        printf 'kernel-devel\n'
+        return 0
+    fi
+
     for file in "$KERNEL_MODULES_DIR"/*/pkgbase; do
         [ -e "$file" ] || continue
         printf '%s-headers\n' "$(cat "$file")"
@@ -105,7 +121,7 @@ install_kernel_headers() {
     fi
 
     info "Installing ${pkgs[*]}"
-    if ! run_pacman -S --needed --noconfirm "${pkgs[@]}"; then
+    if ! run_package_manager -S --needed --noconfirm "${pkgs[@]}"; then
         failure "Could not install ${pkgs[*]}, which the NVIDIA driver needs - see $LOG_FILE"
         return 1
     fi
@@ -124,6 +140,9 @@ setup_nvidia_boot() {
         return 0
     fi
 
+    if [ "${PKG_BACKEND:-}" = "dnf" ]; then
+        return 0
+    fi
     if ! is_installed nvidia-open-dkms && ! is_installed nvidia-580xx-dkms; then
         return 0
     fi

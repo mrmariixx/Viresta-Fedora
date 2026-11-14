@@ -1,0 +1,2 @@
+# Flathub gaming utilities installed only when Gaming is selected.
+net.davidotek.pupgui2

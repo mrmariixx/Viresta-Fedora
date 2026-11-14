@@ -1,0 +1,3 @@
+# Flathub apps without a dependable Fedora RPM.
+com.vscodium.codium
+org.fooyin.fooyin

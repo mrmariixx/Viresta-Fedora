@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
 # update
-# Updates everything installed with one command: the official packages and the AUR with
-# paru, then Flatpak apps. It shows what is waiting first, and asks once.
+# Updates system packages and Flatpak apps with one command. On Arch, paru also updates
+# AUR packages. It shows what is waiting first, and asks once.
 
 set -uo pipefail
 
@@ -49,7 +49,7 @@ usage() {
     row "-c, --check" "Only show what is waiting, without updating"
     row "-y, --yes" "Update without any questions, taking the default answers"
     row "-h, --help" "Show this help"
-    printf '\n%bUpdates the official packages, the AUR and Flatpak apps. Viresta itself is%b\n' "$C_DIM" "$C_RESET"
+    printf '\n%bUpdates system packages, optional AUR packages on Arch, and Flatpak apps. Viresta itself is%b\n' "$C_DIM" "$C_RESET"
     printf '%bupdated with viresta update.%b\n\n' "$C_DIM" "$C_RESET"
 }
 
@@ -66,10 +66,20 @@ if [ "$(id -u)" -eq 0 ]; then
     printf 'Run update as your normal user. It asks for your password when it needs it.\n' >&2
     exit 1
 fi
-if ! command -v pacman >/dev/null 2>&1; then
-    printf 'update is for Arch Linux and distros based on it, like CachyOS.\n' >&2
-    exit 1
-fi
+. "${OS_RELEASE_FILE:-/etc/os-release}"
+case "${ID:-}" in
+    fedora)
+        PACKAGE_BACKEND=dnf
+        DNF_COMMAND=dnf
+        command -v dnf5 >/dev/null 2>&1 && DNF_COMMAND=dnf5
+        command -v "$DNF_COMMAND" >/dev/null 2>&1 || { printf 'DNF is required to update Fedora packages.\n' >&2; exit 1; }
+        ;;
+    arch|cachyos)
+        PACKAGE_BACKEND=pacman
+        command -v pacman >/dev/null 2>&1 || { printf 'pacman is required to update Arch packages.\n' >&2; exit 1; }
+        ;;
+    *) printf 'update supports Fedora Linux, Arch Linux and CachyOS.\n' >&2; exit 1 ;;
+esac
 
 # Ctrl+C at the question stops in the middle of a line, so the prompt starts on its own.
 trap 'printf "\n"; exit 130' INT
@@ -82,6 +92,20 @@ trap 'printf "\n"; exit 130' INT
 # without updating would leave Arch half updated. It answers 2 for nothing waiting.
 count_official() {
     local list status=0
+
+    if [ "$PACKAGE_BACKEND" = "dnf" ]; then
+        if [ "$DNF_COMMAND" = "dnf5" ]; then
+            list="$(dnf5 check-upgrade 2>/dev/null)" || status=$?
+        else
+            list="$(dnf check-update 2>/dev/null)" || status=$?
+        fi
+        if [ "$status" -eq 0 ] || [ "$status" -eq 100 ]; then
+            awk 'NF >= 3 && $1 !~ /^(Last|Available|Package|Obsoleting|No)$/ { count++ } END { print count + 0 }' <<<"$list"
+        else
+            printf '?\n'
+        fi
+        return
+    fi
 
     command -v checkupdates >/dev/null 2>&1 || { printf '?\n'; return; }
     list="$(checkupdates 2>/dev/null)" || status=$?
@@ -112,7 +136,7 @@ show_count() {
 
 HAS_PARU=0
 HAS_FLATPAK=0
-command -v paru >/dev/null 2>&1 && HAS_PARU=1
+if [ "$PACKAGE_BACKEND" = "pacman" ]; then command -v paru >/dev/null 2>&1 && HAS_PARU=1; fi
 command -v flatpak >/dev/null 2>&1 && HAS_FLATPAK=1
 
 # A line that says it is working, then is cleared, only in a real terminal.
@@ -180,16 +204,16 @@ format_duration() {
     if [ "$1" -ge 60 ]; then printf '%dm %02ds' "$(($1 / 60))" "$(($1 % 60))"; else printf '%ds' "$1"; fi
 }
 
-# paru updates the official packages first and then the AUR ones, in one go, so the two
-# are never out of step. pacman's and paru's own questions still come up, unless --yes
-# was given. Then they take the default answer, which is no for replacing or removing a
-# package, so an update that needs that stops and plain update lets you answer it.
+# On Arch, paru keeps repository and AUR updates in one transaction. Fedora uses DNF.
 NOCONFIRM=()
 [ "$ASK" -eq 1 ] || NOCONFIRM=(--noconfirm)
 STOPPED="The package update stopped. Nothing else was updated."
-[ "$ASK" -eq 1 ] || STOPPED="$STOPPED Run update without --yes to answer pacman's questions."
+[ "$ASK" -eq 1 ] || STOPPED="$STOPPED Run update without --yes to answer package manager questions."
 
-if [ "$HAS_PARU" -eq 1 ]; then
+if [ "$PACKAGE_BACKEND" = "dnf" ]; then
+    step "Updating Fedora packages"
+    sudo "$DNF_COMMAND" upgrade --refresh -y || fail "$STOPPED"
+elif [ "$HAS_PARU" -eq 1 ]; then
     step "Updating official and AUR packages"
     paru -Syu "${NOCONFIRM[@]}" || fail "$STOPPED"
 else

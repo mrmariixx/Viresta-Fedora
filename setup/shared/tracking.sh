@@ -8,6 +8,7 @@
 # ------------------------------------------------------------
 
 track() {
+    [ -n "$1" ] || return 0
     mkdir -p "$(dirname "$INSTALLED_FILES")"
     printf '%s\n' "$1" >>"$INSTALLED_FILES"
 }

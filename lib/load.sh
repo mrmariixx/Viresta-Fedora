@@ -27,6 +27,8 @@ source "$SCRIPT_DIR/lib/system/services.sh"
 source "$SCRIPT_DIR/lib/installers/pacman.sh"
 # shellcheck source=lib/installers/aur.sh
 source "$SCRIPT_DIR/lib/installers/aur.sh"
+# shellcheck source=lib/installers/flatpak.sh
+source "$SCRIPT_DIR/lib/installers/flatpak.sh"
 # shellcheck source=setup/shared/shell.sh
 source "$SCRIPT_DIR/setup/shared/shell.sh"
 # shellcheck source=lib/installers/shell.sh

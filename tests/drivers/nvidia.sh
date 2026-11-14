@@ -33,7 +33,7 @@ pkg_source() { case "$1" in nvidia-580xx-*) echo aur ;; *) echo repo ;; esac; }
 INSTALLED=""
 pacman() { if [ "$#" -eq 1 ]; then printf '%s\n' $INSTALLED; return 0; fi; return 1; }
 is_installed() { printf '%s\n' $INSTALLED | grep -qxF "$1"; }
-run_pacman() {
+run_package_manager() {
     shift 3
     call "pacman $*"
     [ "$*" != "${FAIL_PKG:-none}" ] || return 1

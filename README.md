@@ -15,7 +15,14 @@
 </p>
 
 ## 🐧 Supported distros
-- Fedora 44/45
+- Fedora Linux (KDE Plasma)
+- Arch Linux
+- CachyOS
+
+Fedora installs use DNF/RPM, RPM Fusion for proprietary NVIDIA drivers, Steam and OBS Studio,
+and Flathub for VSCodium, Fooyin and ProtonUp-Qt. The Vicinae launcher and Panel Colorizer
+RPMs are not currently provided for Fedora; KDE's built-in launcher remains available.
+Fedora Atomic desktops are not supported.
 
 ## 📋 Requirements
 - A minimal / no desktop installation of a [supported distro](#-supported-distros)
@@ -32,8 +39,8 @@
 The installation script is designed for a minimal installation of a [supported distro](#-supported-distros). Make sure your system meets the requirements [above](#-requirements) before proceeding. Run the following commands as your regular user, not as root:
 
 ```sh
-git clone https://github.com/QuintixLabs/Viresta.git
-cd Viresta
+git clone https://github.com/mrmariixx/Viresta-Fedora.git
+cd Viresta-Fedora
 ./install.sh
 ```
 
@@ -72,7 +79,7 @@ viresta uninstall
 <summary>Why does Viresta exist?</summary>
 <p></p>
 
-I got tired of seeing so many Linux dotfiles that look good but are unstable, difficult to use, or constantly run into errors, so I decided to make something of my own, a clean, simple and stable KDE setup for Arch Linux that looks good, comes with different themes, includes useful applications and is actually made for everyday use
+I got tired of seeing so many Linux dotfiles that look good but are unstable, difficult to use, or constantly run into errors, so I decided to make something of my own, a clean, simple and stable KDE setup that looks good, comes with different themes, includes useful applications and is actually made for everyday use
 
 Ever wanted to set up **KDE** on **Arch** but didn't know how to rice your desktop, or maybe you just didn't feel like spending hours configuring everything yourself? That's what Viresta is here for, giving you a ready-to-use setup without having to figure everything out on your own
 
@@ -99,23 +106,22 @@ It's made for a minimal install, so that's the only setup it's tested on. If you
 <summary>Does it install drivers?</summary>
 <p></p>
 
-Yes, for AMD, Intel and NVIDIA graphics, and the tools for VMware, QEMU/KVM and VirtualBox. The 32-bit versions come too, which Steam and Wine need. Very old NVIDIA cards stay on the `nouveau` driver. Drivers you already have are left alone. On CachyOS, Viresta leaves graphics drivers to CachyOS's own tool, [chwd](https://github.com/CachyOS/chwd).
+Yes, for AMD, Intel and NVIDIA graphics, and the tools for VMware, QEMU/KVM and VirtualBox. Fedora installs the RPM Fusion `akmod-nvidia` driver and the available 32-bit graphics libraries. Very old NVIDIA cards stay on the `nouveau` driver. Drivers you already have are left alone. On CachyOS, Viresta leaves graphics drivers to CachyOS's own tool, [chwd](https://github.com/CachyOS/chwd).
 </details>
 
 <details>
 <summary>The desktop doesn't start after installing NVIDIA drivers, what do I do?</summary>
 <p></p>
 
-Press `Ctrl+Alt+F2`, log in, and run these to go back to the `nouveau` driver:
+Press `Ctrl+Alt+F2` and log in. On Fedora, remove the RPM Fusion driver and rebuild the initramfs:
 
 ```sh
-sudo rm -f /etc/mkinitcpio.conf.d/10-viresta-nvidia.conf
-sudo pacman -Rns $(pacman -Qq | grep nvidia)
-sudo mkinitcpio -P
+sudo dnf remove akmod-nvidia 'xorg-x11-drv-nvidia*'
+sudo dracut --force
 sudo reboot
 ```
 
-Please open an issue too.
+On Arch or CachyOS, remove the NVIDIA packages with pacman and rebuild with `mkinitcpio -P`. Fedora Secure Boot may require enrolling the akmods signing key before the module can load. Please open an issue too.
 </details>
 
 <details>

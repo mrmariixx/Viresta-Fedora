@@ -1,0 +1,5 @@
+# RPM Fusion and Fedora packages for gaming.
+steam
+gamemode
+mangohud
+mangohud.i686

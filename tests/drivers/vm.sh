@@ -48,7 +48,7 @@ pacman() {
     return 1
 }
 is_installed() { [ "$THERE" = "$1" ]; }
-run_pacman() {
+run_package_manager() {
     call "pacman $1 $([ "$1" = -Rdd ] && echo "$3" || echo "$4")"
     case "$1" in
         -Rdd) [ "$REMOVE_OK" -eq 1 ] ;;

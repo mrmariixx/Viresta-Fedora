@@ -8,7 +8,7 @@
 # Settings
 # ------------------------------------------------------------
 
-GAMING_FILE="$SCRIPT_DIR/packages/apps/gaming.txt"
+GAMING_FILE=""
 
 # ------------------------------------------------------------
 # Install
@@ -18,16 +18,24 @@ GAMING_FILE="$SCRIPT_DIR/packages/apps/gaming.txt"
 # knows, which may be for another card. So the matching ones come first, and a VM gets
 # the software one.
 install_gaming() {
-    local pkg
+    local pkg list
+    GAMING_FILE="$(package_list_path apps/gaming)"
 
     install_32bit_drivers
-    if [ "${DRY_RUN:-0}" -eq 0 ] && ! pacman -T lib32-vulkan-driver >/dev/null 2>&1; then
+    if [ "$PKG_BACKEND" = "pacman" ] && [ "${DRY_RUN:-0}" -eq 0 ] && ! pacman -T lib32-vulkan-driver >/dev/null 2>&1; then
         install_gaming_package lib32-vulkan-swrast || true
     fi
 
     while IFS= read -r pkg; do
         install_gaming_package "$pkg" || true
     done < <(read_package_list "$GAMING_FILE")
+
+    if [ "$PKG_BACKEND" = "dnf" ]; then
+        list="$(package_list_path apps/gaming-flatpak)"
+        while IFS= read -r pkg; do
+            install_gaming_package "$pkg" || true
+        done < <(read_package_list "$list")
+    fi
 
     join_gamemode_group
 }
@@ -36,6 +44,11 @@ install_gaming_package() {
     local pkg="$1"
 
     is_installed "$pkg" && return 0
+
+    if [ "$(pkg_source "$pkg")" = "flatpak" ]; then
+        flatpak_install_one "$pkg"
+        return
+    fi
 
     if [ "$(pkg_source "$pkg")" != "repo" ]; then
         aur_install_one "$pkg"
@@ -48,7 +61,7 @@ install_gaming_package() {
     fi
 
     info "$pkg: installing"
-    if ! run_pacman -S --needed --noconfirm "$pkg"; then
+    if ! run_package_manager -S --needed --noconfirm "$pkg"; then
         failure "$pkg: install failed - see $LOG_FILE"
         return 1
     fi

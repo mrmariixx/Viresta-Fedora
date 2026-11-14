@@ -16,7 +16,7 @@ new_packages() {
             if ! grep -qxF "$pkg" "$KNOWN_PACKAGES_FILE" && ! is_installed "$pkg"; then
                 printf '%s\n' "$pkg"
             fi
-        done < <(read_package_list "$SCRIPT_DIR/packages/$list.txt")
+        done < <(read_package_list "$(package_list_path "$list")")
     done
 }
 
@@ -27,7 +27,11 @@ new_packages() {
 install_new_repo_packages() {
     local -a pkgs=()
 
-    mapfile -t pkgs < <(new_packages system/base system/kde apps/pacman)
+    if [ "$PKG_BACKEND" = "dnf" ]; then
+        mapfile -t pkgs < <(new_packages system/base system/kde apps/rpm)
+    else
+        mapfile -t pkgs < <(new_packages system/base system/kde apps/pacman)
+    fi
     install_or_ask "${pkgs[@]}"
 }
 
@@ -40,8 +44,8 @@ install_or_ask() {
 
     [ "${#pkgs[@]}" -gt 0 ] || return 0
 
-    prepare_pacman_conf
-    run_pacman -S --needed --noconfirm "${pkgs[@]}" && return 0
+    prepare_package_manager
+    run_package_manager -S --needed --noconfirm "${pkgs[@]}" && return 0
 
     spinner_stop
     printf '\n'
@@ -50,8 +54,8 @@ install_or_ask() {
     fi
     spinner_start
 
-    if [ "$update_system" -ne 0 ] || ! run_pacman -Syu --noconfirm \
-        || ! run_pacman -S --needed --noconfirm "${pkgs[@]}"; then
+    if [ "$update_system" -ne 0 ] || ! run_package_manager -Syu --noconfirm \
+        || ! run_package_manager -S --needed --noconfirm "${pkgs[@]}"; then
         failure "Could not install: ${pkgs[*]}"
     fi
 }
@@ -72,13 +76,13 @@ install_new_32bit_drivers() {
             continue
         elif [ "$(pkg_source "$pkg")" = "repo" ]; then
             repo+=("$pkg")
-        else
+        elif [ "$PKG_BACKEND" = "pacman" ] && [ "$(pkg_source "$pkg")" = "aur" ]; then
             aur+=("$pkg")
         fi
     done < <(missing_32bit_drivers)
     [ "$((${#repo[@]} + ${#aur[@]}))" -gt 0 ] || return 0
 
-    enable_multilib
+    enable_package_repositories
     install_or_ask "${repo[@]}"
     for pkg in "${aur[@]}"; do
         aur_install_one "$pkg" || true
@@ -89,6 +93,7 @@ install_new_aur_packages() {
     local -a pkgs=()
     local pkg
 
+    [ "$PKG_BACKEND" != "dnf" ] || return 0
     mapfile -t pkgs < <(new_packages apps/aur)
     [ "${#pkgs[@]}" -gt 0 ] || return 0
 
@@ -100,6 +105,17 @@ install_new_aur_packages() {
     set_build_jobs
     for pkg in "${pkgs[@]}"; do
         aur_install_one "$pkg" || true
+    done
+}
+
+install_new_flatpak_apps() {
+    local -a apps=()
+    local app
+
+    [ "$PKG_BACKEND" = "dnf" ] || return 0
+    mapfile -t apps < <(new_packages apps/flatpak)
+    for app in "${apps[@]}"; do
+        flatpak_install_one "$app" || true
     done
 }
 
@@ -126,7 +142,7 @@ app_name() {
             printf '%s\n' "$name"
             return 0
         fi
-    done < <(pacman -Qlq "$1" 2>/dev/null)
+    done < <(package_files "$1")
     return 1
 }
 
@@ -140,7 +156,7 @@ dropped_apps() {
 
     while IFS= read -r pkg; do
         grep -qxF "$pkg" <<<"$listed" && continue
-        real="$(pacman -Qq "$pkg" 2>/dev/null)" || continue
+        real="$(package_installed_name "$pkg")" || continue
         grep -qxF "$real" "$PACKAGES_BEFORE_FILE" 2>/dev/null && continue
         grep -qxF "$real" "$KEPT_APPS_FILE" 2>/dev/null && continue
         name="$(app_name "$real")" || continue
@@ -182,7 +198,11 @@ ask_about_dropped_apps() {
         DROPPED_REMOVE=("${pkgs[@]}")
     else
         DROPPED_KEEP=("${pkgs[@]}")
-        emit "$C_DIM" "  Kept. To remove them later: sudo pacman -Rs ${pkgs[*]}"
+        if [ "$PKG_BACKEND" = "dnf" ]; then
+            emit "$C_DIM" "  Kept. To remove them later: sudo dnf remove ${pkgs[*]}"
+        else
+            emit "$C_DIM" "  Kept. To remove them later: sudo pacman -Rs ${pkgs[*]}"
+        fi
     fi
     printf '\n'
 }
@@ -193,7 +213,7 @@ remove_dropped_apps() {
     local pkg
 
     for pkg in "${DROPPED_REMOVE[@]}"; do
-        if run_pacman -Rs --noconfirm "$pkg"; then
+        if run_package_manager -Rs --noconfirm "$pkg"; then
             DROPPED_REMOVED+=("$pkg")
         else
             failure "$pkg was kept - other packages need it"

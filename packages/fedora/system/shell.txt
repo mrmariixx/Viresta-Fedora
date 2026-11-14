@@ -1,0 +1,5 @@
+# What each shell needs, using Fedora RPM names.
+# shell    package
+bash       starship
+bash       bash-completion
+fish       starship

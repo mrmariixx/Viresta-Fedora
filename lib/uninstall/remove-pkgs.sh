@@ -21,16 +21,27 @@ packages_to_remove() {
     local pkg real
 
     {
-        printf '%s\n' "${VIRESTA_PACKAGES[@]}"
+        if [ "$PKG_BACKEND" = "dnf" ]; then
+            printf '%s\n' starship bash-completion
+        else
+            printf '%s\n' "${VIRESTA_PACKAGES[@]}"
+        fi
         if [ "$REMOVE_APPS" -eq 1 ]; then
-            read_package_list "$SCRIPT_DIR/packages/apps/pacman.txt"
-            read_package_list "$SCRIPT_DIR/packages/apps/aur.txt"
-            read_package_list "$SCRIPT_DIR/packages/apps/gaming.txt"
+            if [ "$PKG_BACKEND" = "dnf" ]; then
+                read_package_list "$(package_list_path apps/rpm)"
+                read_package_list "$(package_list_path apps/flatpak)"
+                read_package_list "$(package_list_path apps/gaming)"
+                read_package_list "$(package_list_path apps/gaming-flatpak)"
+            else
+                read_package_list "$SCRIPT_DIR/packages/apps/pacman.txt"
+                read_package_list "$SCRIPT_DIR/packages/apps/aur.txt"
+                read_package_list "$SCRIPT_DIR/packages/apps/gaming.txt"
+            fi
             # Apps Viresta stopped including that the user kept, which are still its own.
             [ ! -f "$KEPT_APPS_FILE" ] || cat "$KEPT_APPS_FILE"
         fi
     } | sort -u | while IFS= read -r pkg; do
-        real="$(pacman -Qq "$pkg" 2>/dev/null)" || continue
+        real="$(package_installed_name "$pkg")" || continue
         if [ "$real" != "dolphin" ] && ! grep -qxF "$real" "$PACKAGES_BEFORE_FILE" 2>/dev/null; then
             printf '%s\n' "$real"
         fi
@@ -46,11 +57,11 @@ remove_packages() {
     mapfile -t pkgs < <(packages_to_remove)
 
     for pkg in "${pkgs[@]}"; do
-        if [ "$pkg" = "kitty" ] && ! run_pacman -S --needed --noconfirm konsole; then
+        if [ "$pkg" = "kitty" ] && ! run_package_manager -S --needed --noconfirm konsole; then
             failure "Could not install Konsole, so Kitty was kept as your terminal"
             continue
         fi
-        run_pacman -Rs --noconfirm "$pkg" || failure "$pkg was kept - other packages may need it"
+        run_package_manager -Rs --noconfirm "$pkg" || failure "$pkg was kept - other packages may need it"
     done
 }
 
@@ -63,7 +74,7 @@ restore_removed_themes() {
     local -a pkgs=()
     local pkg
 
-    prepare_pacman_conf
+    prepare_package_manager
 
     for pkg in "${REMOVED_THEMES_PACKAGES[@]}" default-cursors; do
         if is_installed "$pkg"; then
@@ -72,6 +83,12 @@ restore_removed_themes() {
     done
     [ "${#pkgs[@]}" -gt 0 ] || return 0
 
-    run_pacman -S --noconfirm "${pkgs[@]}" \
-        || failure "Could not bring back KDE's themes. To try again: sudo pacman -S ${pkgs[*]}"
+    if run_package_manager -S --noconfirm "${pkgs[@]}"; then
+        return 0
+    fi
+    if [ "$PKG_BACKEND" = "dnf" ]; then
+        failure "Could not bring back KDE's themes. To try again: sudo dnf install ${pkgs[*]}"
+    else
+        failure "Could not bring back KDE's themes. To try again: sudo pacman -S ${pkgs[*]}"
+    fi
 }

@@ -42,7 +42,7 @@ pacman() {
     esac
 }
 pkg_source() { case "$1" in *-bin) echo aur ;; *) echo repo ;; esac; }
-run_pacman() { shift 3; call "pacman $*"; INSTALLED="$INSTALLED $*"; }
+run_package_manager() { shift 3; call "pacman $*"; INSTALLED="$INSTALLED $*"; }
 aur_install_one() { call "aur $1"; INSTALLED="$INSTALLED $1"; }
 getent() { [ "$1" = group ] && [ "$2" = gamemode ]; }
 id() { if [ "$1" = -un ]; then echo frost; elif [ "$IN_GROUP" -eq 1 ]; then echo "frost gamemode"; else echo frost; fi; }
