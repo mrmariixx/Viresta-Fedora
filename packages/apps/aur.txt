@@ -1,0 +1,10 @@
+# Fonts
+outfit-font
+
+# Default Applications
+vscodium-bin
+vicinae-bin
+fooyin
+
+# KDE Plasma Components
+plasma6-applets-panel-colorizer

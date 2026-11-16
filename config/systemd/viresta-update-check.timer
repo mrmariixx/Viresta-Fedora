@@ -1,0 +1,10 @@
+[Unit]
+Description=Check for new Viresta releases after login and every 6 hours
+PartOf=graphical-session.target
+
+[Timer]
+OnActiveSec=1min
+OnUnitActiveSec=6h
+
+[Install]
+WantedBy=graphical-session.target

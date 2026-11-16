@@ -1,0 +1,37 @@
+# Viresta's prompt, on one line. It uses the terminal's own colors, so it follows
+# the dark and light themes.
+
+add_newline = false
+format = "$directory$git_branch$git_commit$git_status$character"
+
+[directory]
+style = "bold"
+# The icons are written as codes, since the characters themselves are easy to lose when
+# the file is copied or edited. They need a Nerd Font, which Kitty uses.
+format = "[  $path]($style) "
+truncation_length = 3
+truncate_to_repo = false
+truncation_symbol = "…/"
+home_symbol = "~"
+
+[git_branch]
+symbol = " "
+style = "bright-black"
+format = "[$symbol$branch]($style) "
+only_attached = true
+
+# A release is a tag and not a branch, so this shows its version instead of HEAD.
+[git_commit]
+tag_disabled = false
+tag_symbol = ""
+style = "bright-black"
+format = "[ $tag]($style) "
+
+[git_status]
+style = "yellow"
+format = "([$all_status$ahead_behind]($style) )"
+
+[character]
+success_symbol = "[❯](bold)"
+error_symbol = "[❯](bold red)"
+format = "$symbol "

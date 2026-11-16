@@ -1,0 +1,18 @@
+# Fonts
+ttf-jetbrains-mono
+ttf-jetbrains-mono-nerd
+
+# Default Applications
+kitty
+dolphin
+ark
+firefox
+vim
+haruna
+gwenview
+
+# Everyday Applications
+kcolorchooser
+fastfetch
+obs-studio
+filelight

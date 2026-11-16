@@ -1,0 +1,18 @@
+# Fedora and RPM Fusion applications.
+jetbrains-mono-fonts
+kitty
+dolphin
+ark
+firefox
+vim-enhanced
+haruna
+gwenview
+kcolorchooser
+fastfetch
+obs-studio
+filelight
+starship
+bash-completion
+steam
+gamemode
+mangohud

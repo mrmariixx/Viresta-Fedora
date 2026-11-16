@@ -1,0 +1,12 @@
+# Fedora system tools required by the installer and shell integrations.
+sudo
+git
+gcc
+gcc-c++
+make
+NetworkManager
+curl
+jq
+less
+pciutils
+flatpak

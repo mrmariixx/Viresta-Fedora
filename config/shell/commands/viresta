@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+
+# viresta
+# Runs install.sh, update.sh or uninstall.sh from anywhere, so nobody has to go to the
+# Viresta folder first. Anything after the command is passed along, like --dev.
+
+set -euo pipefail
+
+# ------------------------------------------------------------
+# Settings
+# ------------------------------------------------------------
+
+FOLDER_FILE="${XDG_STATE_HOME:-$HOME/.local/state}/viresta/folder"
+
+# ------------------------------------------------------------
+# Help
+# ------------------------------------------------------------
+
+# The same colors as the scripts' own help, so it still works when the folder is gone.
+C_RESET="" C_BOLD="" C_DIM="" C_ACCENT="" C_OK=""
+if [ -t 1 ] && [ -z "${NO_COLOR:-}" ] && [ "${TERM:-dumb}" != "dumb" ]; then
+    C_RESET=$'\e[0m'
+    C_BOLD=$'\e[1m'
+    C_DIM=$'\e[38;5;245m'
+    C_ACCENT=$'\e[38;5;39m'
+    C_OK=$'\e[38;5;42m'
+fi
+
+heading() {
+    printf '%b%s%b\n' "$C_ACCENT$C_BOLD" "$1" "$C_RESET"
+}
+
+row() {
+    printf '  %b%-13s%b %s\n' "$C_OK" "$1" "$C_RESET" "$2"
+}
+
+usage() {
+    printf '\n%bUsage:%b viresta <command> [options]\n\n' "$C_ACCENT$C_BOLD" "$C_RESET"
+    heading "Commands:"
+    row "install" "Run the install again, with the menu"
+    row "update" "Update Viresta"
+    row "uninstall" "Remove Viresta"
+    printf '\n'
+    heading "Options:"
+    row "-v, --version" "Show the installed version"
+    row "-h, --help" "Show this help"
+    printf '\n'
+    printf '%bOptions after a command are passed to it, like viresta update --dev.%b\n' "$C_DIM" "$C_RESET"
+    printf '%bTo see them, run viresta <command> --help.%b\n\n' "$C_DIM" "$C_RESET"
+}
+
+# ------------------------------------------------------------
+# Folder
+# ------------------------------------------------------------
+
+# Every install and update saves where the folder is, so a moved folder is found again
+# after running one of them from its new place. The message names the script that was
+# wanted, since that one works from there too.
+find_folder() {
+    folder="$(cat "$FOLDER_FILE" 2>/dev/null || true)"
+    if [ -z "$folder" ] || [ ! -f "$folder/update.sh" ]; then
+        printf "Can't find the Viresta folder. If you moved it, run ./%s.sh from its new place.\n" "$1" >&2
+        exit 1
+    fi
+}
+
+# ------------------------------------------------------------
+# Main
+# ------------------------------------------------------------
+
+case "${1:-}" in
+    install|update|uninstall)
+        find_folder "$1"
+        script="$folder/$1.sh"
+        # So the script's help says viresta update instead of ./update.sh.
+        export VIRESTA_RUN_AS="viresta $1"
+        shift
+        exec bash "$script" "$@"
+        ;;
+    -v|--version)
+        find_folder update
+        printf 'Viresta %s\n' "$(tr -d '[:space:]' <"$folder/VERSION" 2>/dev/null || echo unknown)"
+        ;;
+    -h|--help|"")
+        usage
+        ;;
+    *)
+        printf 'Unknown command: %s\n' "$1" >&2
+        usage >&2
+        exit 2
+        ;;
+esac

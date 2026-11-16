@@ -1,0 +1,16 @@
+# Fedora KDE Plasma 6 packages.
+plasma-desktop
+plasma-workspace
+plasma-workspace-wayland
+plasma-nm
+plasma-pa
+sddm
+sddm-kcm
+sddm-breeze
+polkit-kde
+xdg-desktop-portal-kde
+kde-gtk-config
+breeze-gtk
+libnotify
+konsole
+kde-cli-tools

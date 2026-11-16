@@ -1,0 +1,20 @@
+{
+   "$schema": "https://vicinae.com/schemas/config.json",
+   "escape_key_behavior": "",
+   "tray": {
+      "enabled": false
+   },
+   "theme": {
+      "light": {
+         "name": "viresta-light",
+         "icon_theme": "YAMIS-Light"
+      },
+      "dark": {
+         "name": "viresta-dark",
+         "icon_theme": "YAMIS"
+      }
+   },
+   "telemetry": {
+      "system_info": false
+   }
+}

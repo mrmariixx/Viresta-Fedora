@@ -1,0 +1,4 @@
+[General]
+background=/var/lib/viresta/login-wallpaper.jpg
+showClock=true
+type=image

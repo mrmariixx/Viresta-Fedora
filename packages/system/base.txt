@@ -1,0 +1,9 @@
+# Core tools required before and during the install.
+sudo
+git
+base-devel
+networkmanager
+curl
+jq
+less
+pacman-contrib

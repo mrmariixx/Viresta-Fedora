@@ -1,0 +1,90 @@
+name: Draft release
+
+# Runs when the number in VERSION changes. A draft has no tag yet, so update.sh does not
+# see it. Publishing it on GitHub creates the tag, and that is what sends it to users.
+# It can also be run from the Actions tab, to make a deleted draft again.
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - VERSION
+  workflow_dispatch:
+
+jobs:
+  # A version that fails these never becomes a draft, so it cannot be published by mistake.
+  shellcheck:
+    uses: ./.github/workflows/shellcheck.yml
+
+  tests:
+    uses: ./.github/workflows/tests.yml
+
+  draft:
+    needs:
+      - shellcheck
+      - tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Create the draft
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          version="$(tr -d '[:space:]' <VERSION)"
+          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "VERSION should look like 1.2.3, not: $version" >&2
+            exit 1
+          fi
+          tag="v$version"
+
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "$tag already has a release or a draft"
+            exit 0
+          fi
+
+          previous="$(git tag --list 'v[0-9]*' --sort=-v:refname | sed -n 1p)"
+          {
+            if [ -z "$previous" ]; then
+              echo "First release of Viresta."
+            else
+              # The commit that changes VERSION means nothing to users.
+              commits="$(git log --no-merges --invert-grep --grep='^chore: release ' --pretty='%s' "$previous..HEAD")"
+              # What comes after the type, like (menu) or !, up to the colon.
+              rest='(\([^)]*\))?!?:'
+
+              # The heading already says the type, so it is left out of each line. A
+              # heading with nothing under it is left out. Fix: counts the same as fix:.
+              section() {
+                local lines
+                lines="$(grep -iE "^$2$rest" <<<"$commits" | sed -E "s/^$2$rest *//I; s/^./\U&/; s/^/- /" || true)"
+                if [ -n "$lines" ]; then printf '## %s\n%s\n\n' "$1" "$lines"; fi
+              }
+              section "🪐 New features" feat
+              section "🐛 Fixes" fix
+              section "📚 Docs" docs
+              section "♻️ Refactors" refactor
+              section "🧪 Tests" test
+              section "🔧 Chores" chore
+
+              # Anything else keeps its whole message, since there is no heading to say what it is.
+              other="$(grep -iEv "^(feat|fix|docs|refactor|test|chore)$rest" <<<"$commits" | sed 's/^/- /' || true)"
+              if [ -n "$other" ]; then printf '## 📝 Other\n%s\n\n' "$other"; fi
+
+              echo "## Contributors"
+              gh api --paginate "repos/$GITHUB_REPOSITORY/compare/$previous...$GITHUB_SHA" \
+                --jq '.commits[].author.login // empty' \
+                | grep -v '\[bot\]$' | sort -u | sed 's/^/- @/'
+              echo
+              echo "Full Changelog: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/compare/$previous...$tag"
+            fi
+          } >notes.md
+
+          gh release create "$tag" --draft --target "$GITHUB_SHA" --title "$tag" --notes-file notes.md

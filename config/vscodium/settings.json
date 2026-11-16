@@ -1,0 +1,23 @@
+{
+    "json.schemas": [],
+    "security.workspace.trust.enabled": false,
+    "window.autoDetectColorScheme": false,
+    "workbench.colorTheme": "Vesper",
+    "workbench.preferredDarkColorTheme": "Vesper",
+    "workbench.preferredLightColorTheme": "Light 2026",
+    "editor.fontFamily": "'JetBrainsMono Nerd Font Mono'",
+    "editor.fontLigatures": true,
+    "terminal.integrated.fontFamily": "JetBrainsMono Nerd Font Mono",
+    "workbench.startupEditor": "none",
+    "window.titleBarStyle": "native",
+    "window.menuStyle": "custom",
+    "editor.fontSize": 16,
+    "workbench.colorCustomizations": {
+    "[Vesper]": {
+        "statusBar.background": "#101010",
+        "statusBar.foreground": "#A0A0A0",
+        "statusBar.noFolderBackground": "#101010",
+        "statusBar.noFolderForeground": "#A0A0A0"
+        }
+    }
+}

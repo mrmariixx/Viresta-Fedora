@@ -1,0 +1,11 @@
+# Always use LF line endings, wherever a file is edited, since the scripts run on Linux.
+* text=auto eol=lf
+
+# Images
+*.png binary
+*.jpg binary
+*.jpeg binary
+
+# Archives
+*.gz binary
+*.xz binary

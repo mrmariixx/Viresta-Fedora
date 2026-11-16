@@ -1,0 +1,13 @@
+# KDE Plasma 6 - full working desktop.
+plasma-meta
+sddm
+sddm-kcm
+plasma-nm
+plasma-pa
+polkit-kde-agent
+xdg-desktop-portal-kde
+kde-gtk-config
+kwallet-pam
+breeze
+breeze-gtk
+libnotify

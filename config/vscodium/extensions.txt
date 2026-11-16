@@ -1,0 +1,3 @@
+raunofreiberg.vesper
+formulahendry.auto-rename-tag
+ritwickdey.LiveServer
